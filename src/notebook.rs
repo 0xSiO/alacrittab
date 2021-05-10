@@ -26,8 +26,9 @@ impl Notebook {
 
         // Tab
         let tab = gtk::Box::new(Orientation::Horizontal, 0);
-        tab.pack_start(&label, false, false, 0);
-        tab.pack_start(&button, false, false, 0);
+        tab.set_center_widget(Some(&label));
+        tab.pack_end(&button, false, false, 0);
+        tab.set_hexpand(true);
         tab.show_all();
 
         self.inner.append_page(&widget, Some(&tab));
