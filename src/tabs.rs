@@ -3,7 +3,7 @@ use glib::clone;
 use gtk::prelude::*;
 
 pub fn add_tab(application: gtk::Application, notebook: gtk::Notebook) {
-    let widget: gtk::Widget = gtk::Label::new(Some("Content")).upcast();
+    let widget: gtk::Widget = gtk::GLArea::new().upcast();
 
     // Close button
     let close_button = gtk::Button::new();
