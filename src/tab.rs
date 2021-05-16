@@ -2,11 +2,11 @@ use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
 
-use crate::AppMsg;
+use crate::app::AppMsg;
 
 #[derive(Msg)]
 pub enum TabMsg {
-    CloseClicked,
+    Close,
 }
 
 pub struct TabParams {
@@ -33,7 +33,7 @@ impl Widget for Tab {
 
     fn update(&mut self, event: TabMsg) {
         match event {
-            TabMsg::CloseClicked => self
+            TabMsg::Close => self
                 .model
                 .stream
                 .emit(AppMsg::CloseTab(self.model.associated_widget.clone())),
@@ -59,7 +59,7 @@ impl Widget for Tab {
             #[name = "close_image"]
             gtk::Image {},
 
-            clicked => TabMsg::CloseClicked
+            clicked => TabMsg::Close
         }
     }
 
