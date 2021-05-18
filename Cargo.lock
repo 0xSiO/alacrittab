@@ -4,6 +4,7 @@
 name = "alacrittab"
 version = "0.1.0"
 dependencies = [
+ "gdk",
  "glib",
  "gtk",
  "relm",

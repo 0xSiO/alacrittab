@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Write, ops::Deref};
 
 use gtk::prelude::*;
 use relm::*;
@@ -15,6 +15,7 @@ pub struct AppModel {
 pub enum AppMsg {
     NewTab,
     CloseTab(gtk::Widget),
+    GdkEvent(gdk::Event),
     Quit,
 }
 
@@ -29,9 +30,13 @@ impl Widget for App {
 
     fn update(&mut self, event: AppMsg) {
         match event {
-            AppMsg::Quit => gtk::main_quit(),
             AppMsg::NewTab => self.add_tab(),
             AppMsg::CloseTab(widget) => self.remove_tab(widget),
+            AppMsg::GdkEvent(event) => match event.get_event_type() {
+                gdk::EventType::KeyPress => self.print_key(event.downcast().unwrap()),
+                _ => {}
+            },
+            AppMsg::Quit => gtk::main_quit(),
         }
     }
 
@@ -64,6 +69,13 @@ impl Widget for App {
 
     fn init_view(&mut self) {
         self.add_tab();
+
+        connect!(
+            self.model.relm,
+            self.widgets.window,
+            connect_key_press_event(_, event),
+            return (AppMsg::GdkEvent(event.deref().clone()), Inhibit(true))
+        );
     }
 }
 
@@ -101,5 +113,10 @@ impl App {
             1 => self.widgets.notebook.set_show_tabs(false),
             _ => {}
         }
+    }
+
+    fn print_key(&self, event: gdk::EventKey) {
+        event.get_keyval().to_unicode().map(|c| print!("{}", c));
+        std::io::stdout().flush().unwrap();
     }
 }
