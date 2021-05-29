@@ -6,6 +6,7 @@ edition = "2018"
 publish = false
 
 [dependencies]
+alacritty_terminal = { version = "0.14.0", default-features = false }
 gtk = { version = "0.9.2", default-features = false, features = ["v3_24"] }
 gdk = "*"
 glib = "*"
