@@ -3,7 +3,7 @@ use std::sync::Arc;
 use alacritty_terminal::{
     config::Config,
     event::{Event, EventListener},
-    event_loop::{EventLoop, Msg, Notifier},
+    event_loop::{EventLoop, Msg},
     sync::FairMutex,
     term::SizeInfo,
     tty, Term,
@@ -12,6 +12,7 @@ use relm::*;
 
 mod app;
 mod tab;
+mod terminal_display;
 
 #[derive(Clone)]
 struct EventProxy;
