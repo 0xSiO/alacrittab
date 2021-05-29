@@ -4,10 +4,11 @@ use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
 
-use crate::tab::*;
+use crate::gtk::{tab::*, terminal::*};
 
 pub struct AppModel {
     tabs: HashMap<gtk::Widget, Component<Tab>>,
+    terminals: HashMap<gtk::Widget, Component<Terminal>>,
     relm: Relm<App>,
 }
 
@@ -24,6 +25,7 @@ impl Widget for App {
     fn model(relm: &Relm<Self>, _param: ()) -> AppModel {
         AppModel {
             tabs: Default::default(),
+            terminals: Default::default(),
             relm: relm.clone(),
         }
     }
@@ -81,7 +83,8 @@ impl Widget for App {
 
 impl App {
     fn add_tab(&mut self) {
-        let widget: gtk::Widget = gtk::GLArea::new().upcast();
+        let terminal = relm::create_component::<Terminal>(TerminalParams {});
+        let widget: gtk::Widget = terminal.widget().clone().upcast();
         let notebook: &gtk::Notebook = &self.widgets.notebook;
 
         let page_num = notebook.append_page(&widget, Option::<&gtk::Box>::None);
@@ -92,7 +95,8 @@ impl App {
         });
         notebook.set_tab_label(&widget, Some(tab_component.widget()));
         notebook.set_tab_reorderable(&widget, true);
-        self.model.tabs.insert(widget, tab_component);
+        self.model.tabs.insert(widget.clone(), tab_component);
+        self.model.terminals.insert(widget, terminal);
 
         notebook.show_all();
 
@@ -107,6 +111,7 @@ impl App {
         let page_num = self.widgets.notebook.page_num(&widget);
         self.widgets.notebook.remove_page(page_num);
         self.model.tabs.remove(&widget);
+        self.model.terminals.remove(&widget);
 
         match self.widgets.notebook.get_n_pages() {
             0 => self.model.relm.stream().emit(AppMsg::Quit),

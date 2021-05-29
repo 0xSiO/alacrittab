@@ -2,7 +2,7 @@ use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
 
-use crate::app::AppMsg;
+use crate::gtk::app::AppMsg;
 
 #[derive(Msg)]
 pub enum TabMsg {

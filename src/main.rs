@@ -10,8 +10,7 @@ use alacritty_terminal::{
 };
 use relm::*;
 
-mod app;
-mod tab;
+mod gtk;
 mod terminal_display;
 
 #[derive(Clone)]
@@ -50,7 +49,7 @@ fn main() {
 
     let io_thread = pty_event_loop.spawn();
 
-    app::App::run(()).unwrap();
+    gtk::app::App::run(()).unwrap();
 
     loop_tx.send(Msg::Shutdown).unwrap();
     io_thread.join().unwrap();
