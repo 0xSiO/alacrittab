@@ -10,8 +10,8 @@ use alacritty_terminal::{
 };
 use relm::*;
 
+mod common;
 mod gtk;
-mod terminal_display;
 
 #[derive(Clone)]
 struct EventProxy;
