@@ -8,6 +8,7 @@ dependencies = [
  "gdk",
  "glib",
  "gtk",
+ "mio-extras",
  "relm",
  "relm-derive",
 ]

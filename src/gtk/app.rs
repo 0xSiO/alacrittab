@@ -1,11 +1,21 @@
-use std::{collections::HashMap, io::Write, ops::Deref};
+use std::{collections::HashMap, io::Write, ops::Deref, sync::Arc, thread::JoinHandle};
 
-use alacritty_terminal::config::Config;
+use alacritty_terminal::{
+    config::Config,
+    event_loop::{EventLoop, Msg, State},
+    sync::FairMutex,
+    term::SizeInfo,
+    tty::{self, Pty},
+    Term,
+};
 use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
 
-use crate::gtk::{tab::*, terminal::*};
+use crate::{
+    gtk::{tab::*, terminal::*},
+    EventProxy,
+};
 
 #[derive(Msg)]
 pub enum AppMsg {
@@ -95,9 +105,47 @@ impl Widget for App {
 }
 
 impl App {
+    fn spawn_terminal(
+        &self,
+    ) -> (
+        Arc<FairMutex<Term<EventProxy>>>,
+        mio_extras::channel::Sender<Msg>,
+        JoinHandle<(EventLoop<Pty, EventProxy>, State)>,
+    ) {
+        // TODO: Create size from config
+        let size_info = SizeInfo::new(1024.0, 768.0, 10.0, 20.0, 5.0, 5.0, false);
+        let event_proxy = EventProxy;
+
+        let terminal = Arc::new(FairMutex::new(Term::new(
+            &self.model.terminal_config,
+            size_info,
+            event_proxy.clone(),
+        )));
+
+        let pty = tty::new(&self.model.terminal_config, &size_info, None);
+
+        let pty_event_loop = EventLoop::new(
+            Arc::clone(&terminal),
+            event_proxy.clone(),
+            pty,
+            false,
+            false,
+        );
+
+        let loop_tx = pty_event_loop.channel();
+
+        let io_thread = pty_event_loop.spawn();
+
+        (terminal, loop_tx, io_thread)
+    }
+
     fn new_terminal(&mut self) {
+        let (term, loop_tx, io_thread) = self.spawn_terminal();
         let terminal = relm::create_component::<Terminal>(TerminalParams {
             stream: self.model.relm.stream().clone(),
+            term,
+            loop_tx,
+            io_thread,
         });
 
         let widget: gtk::Widget = terminal.widget().clone().upcast();
