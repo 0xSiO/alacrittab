@@ -97,7 +97,7 @@ impl Update for Terminal {
     fn update(&mut self, event: Self::Msg) {
         use TerminalMsg::*;
 
-        debug!("received event");
+        trace!("received event");
         match event {
             TerminalEvent(event) => self.handle_terminal_event(event),
             Quit => {

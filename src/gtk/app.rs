@@ -44,7 +44,7 @@ impl Widget for App {
     fn update(&mut self, event: AppMsg) {
         use AppMsg::*;
 
-        debug!("received event");
+        trace!("received event");
         match event {
             NewTerminal => self.new_terminal(),
             CloseTerminal(widget) => self.close_terminal(widget),

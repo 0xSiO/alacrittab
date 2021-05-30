@@ -22,4 +22,6 @@ fn main() {
     tty::setup_env(&config);
 
     gtk::app::App::run(AppParams { config }).unwrap();
+
+    info!("quitting alacrittab");
 }

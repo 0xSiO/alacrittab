@@ -34,7 +34,7 @@ impl Widget for Tab {
 
     #[instrument(skip(self))]
     fn update(&mut self, event: TabMsg) {
-        debug!("received event");
+        trace!("received event");
         match event {
             TabMsg::Close => self
                 .model
