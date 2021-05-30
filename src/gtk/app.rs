@@ -1,22 +1,12 @@
-use std::{collections::HashMap, ops::Deref, sync::Arc, thread::JoinHandle};
+use std::{collections::HashMap, ops::Deref, sync::Arc};
 
-use alacritty_terminal::{
-    config::Config,
-    event_loop::{EventLoop, Msg, State},
-    sync::FairMutex,
-    term::SizeInfo,
-    tty::{self, Pty},
-    Term,
-};
+use alacritty_terminal::config::Config;
 use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
 use tracing::*;
 
-use crate::{
-    gtk::{tab::*, terminal::*},
-    EventProxy,
-};
+use crate::gtk::{tab::*, terminal::*};
 
 #[derive(Msg, Debug)]
 pub enum AppMsg {
@@ -29,11 +19,11 @@ pub enum AppMsg {
 }
 
 pub struct AppParams {
-    pub terminal_config: Config<()>,
+    pub config: Config<()>,
 }
 
 pub struct AppModel {
-    terminal_config: Config<()>,
+    config: Arc<Config<()>>,
     tabs: HashMap<gtk::Widget, Component<Tab>>,
     terminals: HashMap<gtk::Widget, Component<Terminal>>,
     relm: Relm<App>,
@@ -43,7 +33,7 @@ pub struct AppModel {
 impl Widget for App {
     fn model(relm: &Relm<Self>, params: AppParams) -> AppModel {
         AppModel {
-            terminal_config: params.terminal_config,
+            config: Arc::new(params.config),
             tabs: Default::default(),
             terminals: Default::default(),
             relm: relm.clone(),
@@ -108,47 +98,10 @@ impl Widget for App {
 }
 
 impl App {
-    fn spawn_terminal(
-        &self,
-    ) -> (
-        Arc<FairMutex<Term<EventProxy>>>,
-        mio_extras::channel::Sender<Msg>,
-        JoinHandle<(EventLoop<Pty, EventProxy>, State)>,
-    ) {
-        // TODO: Create size from config
-        let size_info = SizeInfo::new(1024.0, 768.0, 10.0, 20.0, 5.0, 5.0, false);
-        let event_proxy = EventProxy;
-
-        let terminal = Arc::new(FairMutex::new(Term::new(
-            &self.model.terminal_config,
-            size_info,
-            event_proxy.clone(),
-        )));
-
-        let pty = tty::new(&self.model.terminal_config, &size_info, None);
-
-        let pty_event_loop = EventLoop::new(
-            Arc::clone(&terminal),
-            event_proxy.clone(),
-            pty,
-            false,
-            false,
-        );
-
-        let loop_tx = pty_event_loop.channel();
-
-        let io_thread = pty_event_loop.spawn();
-
-        (terminal, loop_tx, io_thread)
-    }
-
     fn new_terminal(&mut self) {
-        let (term, loop_tx, io_thread) = self.spawn_terminal();
         let terminal = relm::create_component::<Terminal>(TerminalParams {
             stream: self.model.relm.stream().clone(),
-            term,
-            loop_tx,
-            io_thread,
+            config: Arc::clone(&self.model.config),
         });
 
         let widget: gtk::Widget = terminal.widget().clone().upcast();
