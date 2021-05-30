@@ -1,3 +1,5 @@
+use std::{sync::Arc, thread::JoinHandle};
+
 use alacritty_terminal::{
     event_loop::{EventLoop, Msg, State},
     sync::FairMutex,
@@ -7,7 +9,7 @@ use alacritty_terminal::{
 use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
-use std::{sync::Arc, thread::JoinHandle};
+use tracing::*;
 
 use crate::{gtk::app::AppMsg, EventProxy};
 
@@ -50,8 +52,9 @@ impl Update for Terminal {
         }
     }
 
+    #[instrument(skip(self))]
     fn update(&mut self, event: Self::Msg) {
-        println!("{:?}", event);
+        debug!("received event");
         match event {
             TerminalMsg::Quit => {
                 self.model.loop_tx.send(Msg::Shutdown).unwrap();

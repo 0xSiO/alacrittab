@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Write, ops::Deref, sync::Arc, thread::JoinHandle};
+use std::{collections::HashMap, ops::Deref, sync::Arc, thread::JoinHandle};
 
 use alacritty_terminal::{
     config::Config,
@@ -11,13 +11,14 @@ use alacritty_terminal::{
 use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
+use tracing::*;
 
 use crate::{
     gtk::{tab::*, terminal::*},
     EventProxy,
 };
 
-#[derive(Msg)]
+#[derive(Msg, Debug)]
 pub enum AppMsg {
     NewTerminal,
     CloseTerminal(gtk::Widget),
@@ -49,9 +50,11 @@ impl Widget for App {
         }
     }
 
+    #[instrument(skip(self))]
     fn update(&mut self, event: AppMsg) {
         use AppMsg::*;
 
+        debug!("received event");
         match event {
             NewTerminal => self.new_terminal(),
             CloseTerminal(widget) => self.close_terminal(widget),
@@ -200,8 +203,11 @@ impl App {
         }
     }
 
+    #[instrument(skip(self, event))]
     fn print_key(&self, event: gdk::EventKey) {
-        event.get_keyval().to_unicode().map(|c| print!("{}", c));
-        std::io::stdout().flush().unwrap();
+        event
+            .get_keyval()
+            .name()
+            .map(|c| debug!("key pressed: {}", c));
     }
 }

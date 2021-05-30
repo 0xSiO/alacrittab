@@ -1,10 +1,11 @@
 use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
+use tracing::*;
 
 use crate::gtk::app::AppMsg;
 
-#[derive(Msg)]
+#[derive(Msg, Debug)]
 pub enum TabMsg {
     Close,
 }
@@ -31,7 +32,9 @@ impl Widget for Tab {
         }
     }
 
+    #[instrument(skip(self))]
     fn update(&mut self, event: TabMsg) {
+        debug!("received event");
         match event {
             TabMsg::Close => self
                 .model
