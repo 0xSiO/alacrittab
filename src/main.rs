@@ -13,6 +13,8 @@ use relm::*;
 mod common;
 mod gtk;
 
+use crate::gtk::app::AppParams;
+
 #[derive(Clone)]
 struct EventProxy;
 
@@ -49,7 +51,10 @@ fn main() {
 
     let io_thread = pty_event_loop.spawn();
 
-    gtk::app::App::run(()).unwrap();
+    gtk::app::App::run(AppParams {
+        terminal_config: config,
+    })
+    .unwrap();
 
     loop_tx.send(Msg::Shutdown).unwrap();
     io_thread.join().unwrap();

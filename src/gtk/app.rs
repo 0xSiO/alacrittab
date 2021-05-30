@@ -1,16 +1,11 @@
 use std::{collections::HashMap, io::Write, ops::Deref};
 
+use alacritty_terminal::config::Config;
 use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
 
 use crate::gtk::{tab::*, terminal::*};
-
-pub struct AppModel {
-    tabs: HashMap<gtk::Widget, Component<Tab>>,
-    terminals: HashMap<gtk::Widget, Component<Terminal>>,
-    relm: Relm<App>,
-}
 
 #[derive(Msg)]
 pub enum AppMsg {
@@ -22,10 +17,22 @@ pub enum AppMsg {
     Quit,
 }
 
+pub struct AppParams {
+    pub terminal_config: Config<()>,
+}
+
+pub struct AppModel {
+    terminal_config: Config<()>,
+    tabs: HashMap<gtk::Widget, Component<Tab>>,
+    terminals: HashMap<gtk::Widget, Component<Terminal>>,
+    relm: Relm<App>,
+}
+
 #[widget]
 impl Widget for App {
-    fn model(relm: &Relm<Self>, _param: ()) -> AppModel {
+    fn model(relm: &Relm<Self>, params: AppParams) -> AppModel {
         AppModel {
+            terminal_config: params.terminal_config,
             tabs: Default::default(),
             terminals: Default::default(),
             relm: relm.clone(),
