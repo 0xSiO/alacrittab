@@ -36,6 +36,7 @@ impl EventListener for EventProxy {
 #[derive(Msg, Debug)]
 pub enum TerminalMsg {
     TerminalEvent(Event),
+    Render,
     Quit,
 }
 
@@ -48,6 +49,7 @@ pub struct TerminalModel {
     term: Arc<FairMutex<Term<EventProxy>>>,
     event_handler: EventHandler<(), (), EventProxy, Pty>,
     stream: StreamHandle<AppMsg>,
+    relm: Relm<Terminal>,
 }
 
 pub struct Terminal {
@@ -90,6 +92,7 @@ impl Update for Terminal {
             term,
             event_handler,
             stream: params.stream,
+            relm: relm.clone(),
         }
     }
 
@@ -100,6 +103,13 @@ impl Update for Terminal {
         trace!("received event");
         match event {
             TerminalEvent(event) => self.handle_terminal_event(event),
+            Render => {
+                self.display.make_current();
+                unsafe {
+                    gl::ClearColor(0., 255., 255., 0.5);
+                    gl::Clear(gl::COLOR_BUFFER_BIT);
+                }
+            }
             Quit => {
                 self.model.term.lock().exit();
             }
@@ -123,6 +133,13 @@ impl Widget for Terminal {
 
     fn init_view(&mut self) {
         self.display.show_all();
+
+        connect!(
+            self.model.relm,
+            self.display,
+            connect_render(_, event),
+            return (TerminalMsg::Render, Inhibit(false))
+        );
     }
 }
 
