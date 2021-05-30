@@ -2,13 +2,19 @@ use gtk::prelude::*;
 use relm::*;
 use relm_derive::*;
 
-#[derive(Msg)]
-pub enum TerminalMsg {}
+use crate::gtk::app::AppMsg;
 
-pub struct TerminalParams {}
+#[derive(Msg, Debug)]
+pub enum TerminalMsg {
+    Quit,
+}
+
+pub struct TerminalParams {
+    pub stream: StreamHandle<AppMsg>,
+}
 
 pub struct TerminalModel {
-    relm: Relm<Terminal>,
+    stream: StreamHandle<AppMsg>,
 }
 
 pub struct Terminal {
@@ -22,11 +28,21 @@ impl Update for Terminal {
     type ModelParam = TerminalParams;
     type Msg = TerminalMsg;
 
-    fn model(relm: &Relm<Self>, _param: Self::ModelParam) -> Self::Model {
-        TerminalModel { relm: relm.clone() }
+    fn model(_relm: &Relm<Self>, param: Self::ModelParam) -> Self::Model {
+        TerminalModel {
+            stream: param.stream,
+        }
     }
 
-    fn update(&mut self, _event: Self::Msg) {}
+    fn update(&mut self, event: Self::Msg) {
+        println!("{:?}", event);
+        match event {
+            TerminalMsg::Quit => self
+                .model
+                .stream
+                .emit(AppMsg::TerminalExit(self.root().upcast())),
+        }
+    }
 }
 
 impl Widget for Terminal {

@@ -16,6 +16,7 @@ pub struct AppModel {
 pub enum AppMsg {
     NewTab,
     CloseTab(gtk::Widget),
+    TerminalExit(gtk::Widget),
     GdkEvent(gdk::Event),
     Quit,
 }
@@ -32,8 +33,9 @@ impl Widget for App {
 
     fn update(&mut self, event: AppMsg) {
         match event {
-            AppMsg::NewTab => self.add_tab(),
-            AppMsg::CloseTab(widget) => self.remove_tab(widget),
+            AppMsg::NewTab => self.new_terminal(),
+            AppMsg::CloseTab(widget) => self.close_terminal(widget),
+            AppMsg::TerminalExit(widget) => self.remove_terminal(widget),
             AppMsg::GdkEvent(event) => match event.get_event_type() {
                 gdk::EventType::KeyPress => self.print_key(event.downcast().unwrap()),
                 _ => {}
@@ -65,12 +67,13 @@ impl Widget for App {
             #[name = "notebook"]
             gtk::Notebook {},
 
+            // TODO: Close all terminals instead of direct quit
             delete_event(_, _) => (AppMsg::Quit, Inhibit(false)),
         }
     }
 
     fn init_view(&mut self) {
-        self.add_tab();
+        self.new_terminal();
 
         connect!(
             self.model.relm,
@@ -82,8 +85,11 @@ impl Widget for App {
 }
 
 impl App {
-    fn add_tab(&mut self) {
-        let terminal = relm::create_component::<Terminal>(TerminalParams {});
+    fn new_terminal(&mut self) {
+        let terminal = relm::create_component::<Terminal>(TerminalParams {
+            stream: self.model.relm.stream().clone(),
+        });
+
         let widget: gtk::Widget = terminal.widget().clone().upcast();
         let notebook: &gtk::Notebook = &self.widgets.notebook;
 
@@ -95,6 +101,7 @@ impl App {
         });
         notebook.set_tab_label(&widget, Some(tab_component.widget()));
         notebook.set_tab_reorderable(&widget, true);
+
         self.model.tabs.insert(widget.clone(), tab_component);
         self.model.terminals.insert(widget, terminal);
 
@@ -107,7 +114,16 @@ impl App {
         }
     }
 
-    fn remove_tab(&mut self, widget: gtk::Widget) {
+    fn close_terminal(&mut self, widget: gtk::Widget) {
+        self.model
+            .terminals
+            .get(&widget)
+            .map(|c: &Component<Terminal>| {
+                c.emit(TerminalMsg::Quit);
+            });
+    }
+
+    fn remove_terminal(&mut self, widget: gtk::Widget) {
         let page_num = self.widgets.notebook.page_num(&widget);
         self.widgets.notebook.remove_page(page_num);
         self.model.tabs.remove(&widget);
