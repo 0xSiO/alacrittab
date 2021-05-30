@@ -100,8 +100,8 @@ impl Widget for App {
 impl App {
     fn new_terminal(&mut self) {
         let terminal = relm::create_component::<Terminal>(TerminalParams {
-            stream: self.model.relm.stream().clone(),
             config: Arc::clone(&self.model.config),
+            stream: self.model.relm.stream().clone(),
         });
 
         let widget: gtk::Widget = terminal.widget().clone().upcast();

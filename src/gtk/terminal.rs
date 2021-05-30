@@ -1,9 +1,9 @@
-use std::{sync::Arc, thread::JoinHandle};
+use std::sync::Arc;
 
 use alacritty_terminal::{
     config::Config,
     event::{Event, EventListener},
-    event_loop::{EventLoop, Msg, State},
+    event_loop::{self, EventLoop},
     sync::FairMutex,
     term::SizeInfo,
     tty::{self, Pty},
@@ -14,7 +14,10 @@ use relm::*;
 use relm_derive::*;
 use tracing::*;
 
-use crate::gtk::app::AppMsg;
+use crate::{
+    common::{EventHandler, TerminalDisplay},
+    gtk::app::AppMsg,
+};
 
 #[derive(Clone)]
 pub struct EventProxy {
@@ -26,26 +29,25 @@ unsafe impl Send for EventProxy {}
 
 impl EventListener for EventProxy {
     fn send_event(&self, event: Event) {
-        self.stream.lock().emit(TerminalMsg::Event(event));
+        self.stream.lock().emit(TerminalMsg::TerminalEvent(event));
     }
 }
 
 #[derive(Msg, Debug)]
 pub enum TerminalMsg {
-    Event(Event),
+    TerminalEvent(Event),
     Quit,
 }
 
 pub struct TerminalParams {
-    pub stream: StreamHandle<AppMsg>,
     pub config: Arc<Config<()>>,
+    pub stream: StreamHandle<AppMsg>,
 }
 
 pub struct TerminalModel {
-    stream: StreamHandle<AppMsg>,
     term: Arc<FairMutex<Term<EventProxy>>>,
-    event_tx: mio_extras::channel::Sender<Msg>,
-    io_thread: Option<JoinHandle<(EventLoop<Pty, EventProxy>, State)>>,
+    event_handler: EventHandler<(), (), EventProxy, Pty>,
+    stream: StreamHandle<AppMsg>,
 }
 
 pub struct Terminal {
@@ -77,34 +79,29 @@ impl Update for Terminal {
         let event_tx = event_loop.channel();
         let io_thread = event_loop.spawn();
 
+        let event_handler = EventHandler::new(
+            Arc::clone(&term),
+            TerminalDisplay::new((), size_info, ()),
+            event_loop::Notifier(event_tx),
+            io_thread,
+        );
+
         TerminalModel {
-            stream: params.stream,
             term,
-            event_tx,
-            io_thread: Some(io_thread),
+            event_handler,
+            stream: params.stream,
         }
     }
 
     #[instrument(skip(self))]
     fn update(&mut self, event: Self::Msg) {
+        use TerminalMsg::*;
+
         debug!("received event");
         match event {
-            TerminalMsg::Event(event) => match event {
-                Event::Wakeup => {
-                    // TODO: Queue up a draw
-                }
-                // TODO: Handle other alacritty_terminal events
-                _ => {}
-            },
-            TerminalMsg::Quit => {
-                self.model.event_tx.send(Msg::Shutdown).unwrap();
-                if let Some(io_thread) = self.model.io_thread.take() {
-                    io_thread.join().unwrap();
-                }
-
-                self.model
-                    .stream
-                    .emit(AppMsg::TerminalExit(self.root().upcast()));
+            TerminalEvent(event) => self.handle_terminal_event(event),
+            Quit => {
+                self.model.term.lock().exit();
             }
         }
     }
@@ -126,5 +123,19 @@ impl Widget for Terminal {
 
     fn init_view(&mut self) {
         self.display.show_all();
+    }
+}
+
+impl Terminal {
+    fn handle_terminal_event(&mut self, event: Event) {
+        let should_exit = matches!(event, Event::Exit);
+
+        self.model.event_handler.handle(event);
+
+        if should_exit {
+            self.model
+                .stream
+                .emit(AppMsg::TerminalExit(self.root().upcast()));
+        }
     }
 }
