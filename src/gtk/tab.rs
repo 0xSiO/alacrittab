@@ -36,7 +36,7 @@ impl Widget for Tab {
             TabMsg::Close => self
                 .model
                 .stream
-                .emit(AppMsg::CloseTab(self.model.associated_widget.clone())),
+                .emit(AppMsg::CloseTerminal(self.model.associated_widget.clone())),
         }
     }
 

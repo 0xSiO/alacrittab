@@ -14,8 +14,9 @@ pub struct AppModel {
 
 #[derive(Msg)]
 pub enum AppMsg {
-    NewTab,
-    CloseTab(gtk::Widget),
+    NewTerminal,
+    CloseTerminal(gtk::Widget),
+    CloseAllTerminals,
     TerminalExit(gtk::Widget),
     GdkEvent(gdk::Event),
     Quit,
@@ -32,15 +33,18 @@ impl Widget for App {
     }
 
     fn update(&mut self, event: AppMsg) {
+        use AppMsg::*;
+
         match event {
-            AppMsg::NewTab => self.new_terminal(),
-            AppMsg::CloseTab(widget) => self.close_terminal(widget),
-            AppMsg::TerminalExit(widget) => self.remove_terminal(widget),
-            AppMsg::GdkEvent(event) => match event.get_event_type() {
+            NewTerminal => self.new_terminal(),
+            CloseTerminal(widget) => self.close_terminal(widget),
+            CloseAllTerminals => self.close_all_terminals(),
+            TerminalExit(widget) => self.remove_terminal(widget),
+            GdkEvent(event) => match event.get_event_type() {
                 gdk::EventType::KeyPress => self.print_key(event.downcast().unwrap()),
                 _ => {}
             },
-            AppMsg::Quit => gtk::main_quit(),
+            Quit => gtk::main_quit(),
         }
     }
 
@@ -57,7 +61,7 @@ impl Widget for App {
                         gtk::Label {
                             text: "+"
                         },
-                        clicked => AppMsg::NewTab
+                        clicked => AppMsg::NewTerminal
                     }
                 }
             },
@@ -67,8 +71,7 @@ impl Widget for App {
             #[name = "notebook"]
             gtk::Notebook {},
 
-            // TODO: Close all terminals instead of direct quit
-            delete_event(_, _) => (AppMsg::Quit, Inhibit(false)),
+            delete_event(_, _) => (AppMsg::CloseAllTerminals, Inhibit(false)),
         }
     }
 
@@ -121,6 +124,12 @@ impl App {
             .map(|c: &Component<Terminal>| {
                 c.emit(TerminalMsg::Quit);
             });
+    }
+
+    fn close_all_terminals(&mut self) {
+        for terminal in self.model.terminals.values() {
+            terminal.emit(TerminalMsg::Quit);
+        }
     }
 
     fn remove_terminal(&mut self, widget: gtk::Widget) {
