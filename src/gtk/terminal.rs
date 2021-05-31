@@ -1,4 +1,4 @@
-use std::{io::Write, sync::Arc};
+use std::sync::Arc;
 
 use alacritty_terminal::{
     config::Config,
@@ -6,8 +6,7 @@ use alacritty_terminal::{
     event_loop::{self, EventLoop},
     sync::FairMutex,
     term::SizeInfo,
-    tty::{self, Pty},
-    Term,
+    tty, Term,
 };
 use gtk::prelude::*;
 use relm::*;
@@ -15,7 +14,7 @@ use relm_derive::*;
 use tracing::*;
 
 use crate::{
-    common::{EventHandler, TerminalDisplay},
+    common::{Display, EventHandler},
     gtk::app::AppMsg,
 };
 
@@ -47,7 +46,7 @@ pub struct TerminalParams {
 
 pub struct TerminalModel {
     term: Arc<FairMutex<Term<EventProxy>>>,
-    event_handler: EventHandler<(), (), EventProxy, Pty>,
+    event_handler: EventHandler<(), EventProxy>,
     stream: StreamHandle<AppMsg>,
     relm: Relm<Terminal>,
 }
@@ -83,7 +82,7 @@ impl Update for Terminal {
 
         let event_handler = EventHandler::new(
             Arc::clone(&term),
-            TerminalDisplay::new((), size_info, ()),
+            Display::new(size_info, ()),
             event_loop::Notifier(event_tx),
             io_thread,
         );
@@ -106,7 +105,7 @@ impl Update for Terminal {
             Render => {
                 self.display.make_current();
                 unsafe {
-                    gl::ClearColor(0., 255., 255., 0.5);
+                    gl::ClearColor(0., 0., 0., 1.0);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
                 }
             }
@@ -137,7 +136,7 @@ impl Widget for Terminal {
         connect!(
             self.model.relm,
             self.display,
-            connect_render(_, event),
+            connect_render(_, _),
             return (TerminalMsg::Render, Inhibit(false))
         );
     }
@@ -148,13 +147,6 @@ impl Terminal {
         let should_exit = matches!(event, Event::Exit);
 
         self.model.event_handler.handle(event);
-
-        let term = self.model.term.lock();
-        let indexed_cells: Vec<_> = term.renderable_content().display_iter.collect();
-        for indexed_cell in indexed_cells {
-            print!("{}", indexed_cell.cell.c);
-            std::io::stdout().flush().unwrap();
-        }
 
         if should_exit {
             self.model
