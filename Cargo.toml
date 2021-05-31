@@ -11,10 +11,8 @@ epoxy = "0.1.0"
 gl = "0.14.0"
 gtk = { version = "0.9.2", default-features = false, features = ["v3_24"] }
 gdk = "*"
-glib = "*"
-mio-extras = "2.0.6"
 relm = "0.21.0"
 relm-derive = "0.21.0"
 shared_library = "0.1.9"
 tracing = "0.1.26"
-tracing-subscriber = "0.2.18"
+tracing-subscriber = { version = "0.2.18", default-features = false, features = ["ansi", "env-filter", "fmt"] }
