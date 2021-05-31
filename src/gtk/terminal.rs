@@ -53,8 +53,7 @@ pub struct TerminalModel {
 
 pub struct Terminal {
     model: TerminalModel,
-    // TODO: Make a wrapper around gtk::GLArea and implement Draw, then make this a TerminalDisplay
-    display: gtk::GLArea,
+    gl_area: gtk::GLArea,
 }
 
 impl Update for Terminal {
@@ -103,7 +102,7 @@ impl Update for Terminal {
         match event {
             TerminalEvent(event) => self.handle_terminal_event(event),
             Render => {
-                self.display.make_current();
+                self.gl_area.make_current();
                 unsafe {
                     gl::ClearColor(0., 0., 0., 1.0);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -120,22 +119,22 @@ impl Widget for Terminal {
     type Root = gtk::GLArea;
 
     fn root(&self) -> Self::Root {
-        self.display.clone()
+        self.gl_area.clone()
     }
 
     fn view(_relm: &Relm<Self>, model: Self::Model) -> Self {
         Self {
             model,
-            display: gtk::GLArea::new(),
+            gl_area: gtk::GLArea::new(),
         }
     }
 
     fn init_view(&mut self) {
-        self.display.show_all();
+        self.gl_area.show_all();
 
         connect!(
             self.model.relm,
-            self.display,
+            self.gl_area,
             connect_render(_, _),
             return (TerminalMsg::Render, Inhibit(false))
         );
