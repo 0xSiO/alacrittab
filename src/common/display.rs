@@ -4,8 +4,8 @@ use crate::common::Render;
 
 #[allow(dead_code)]
 pub struct Display<R: Render> {
-    renderer: R,
     size_info: SizeInfo,
+    renderer: R,
 }
 
 impl<R: Render> Display<R> {

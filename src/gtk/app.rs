@@ -129,12 +129,9 @@ impl App {
     }
 
     fn close_terminal(&mut self, widget: gtk::Widget) {
-        self.model
-            .terminals
-            .get(&widget)
-            .map(|c: &Component<Terminal>| {
-                c.emit(TerminalMsg::Quit);
-            });
+        if let Some(component) = self.model.terminals.get(&widget) {
+            component.emit(TerminalMsg::Quit);
+        }
     }
 
     fn close_all_terminals(&mut self) {
@@ -158,9 +155,8 @@ impl App {
 
     #[instrument(skip(self, event))]
     fn print_key(&self, event: gdk::EventKey) {
-        event
-            .get_keyval()
-            .name()
-            .map(|c| debug!("key pressed: {}", c));
+        if let Some(name) = event.get_keyval().name() {
+            debug!("key pressed: {}", name);
+        }
     }
 }
