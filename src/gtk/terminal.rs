@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{io::Write, sync::Arc};
 
 use alacritty_terminal::{
     config::Config,
@@ -65,7 +65,7 @@ impl Update for Terminal {
 
     fn model(relm: &Relm<Self>, params: Self::ModelParam) -> Self::Model {
         // TODO: Create size from config
-        let size_info = SizeInfo::new(1024.0, 768.0, 10.0, 20.0, 5.0, 5.0, false);
+        let size_info = SizeInfo::new(800.0, 600.0, 10.0, 20.0, 5.0, 5.0, false);
         let event_proxy = EventProxy {
             stream: Arc::new(FairMutex::new(relm.stream().clone())),
         };
@@ -148,6 +148,13 @@ impl Terminal {
         let should_exit = matches!(event, Event::Exit);
 
         self.model.event_handler.handle(event);
+
+        let term = self.model.term.lock();
+        let indexed_cells: Vec<_> = term.renderable_content().display_iter.collect();
+        for indexed_cell in indexed_cells {
+            print!("{}", indexed_cell.cell.c);
+            std::io::stdout().flush().unwrap();
+        }
 
         if should_exit {
             self.model
