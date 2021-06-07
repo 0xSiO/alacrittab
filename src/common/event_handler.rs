@@ -58,7 +58,7 @@ where
                     io_thread.join().unwrap();
                 }
             }
-            _ => todo!(),
+            _ => {}
         }
 
         if self.should_draw {

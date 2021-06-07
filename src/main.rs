@@ -11,6 +11,7 @@ mod gtk;
 
 use crate::gtk::app::AppParams;
 
+// TODO: Note required packages: libepoxy-devel, gtk3-devel
 #[instrument]
 fn main() {
     tracing_subscriber::fmt()
