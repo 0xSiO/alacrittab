@@ -50,7 +50,7 @@ impl Widget for App {
             CloseTerminal(widget) => self.close_terminal(widget),
             CloseAllTerminals => self.close_all_terminals(),
             TerminalExit(widget) => self.remove_terminal(widget),
-            GdkEvent(event) => match event.get_event_type() {
+            GdkEvent(event) => match event.event_type() {
                 gdk::EventType::KeyPress => self.print_key(event.downcast().unwrap()),
                 _ => {}
             },
@@ -75,8 +75,8 @@ impl Widget for App {
                     }
                 }
             },
-            property_default_width: 640,
-            property_default_height: 480,
+            default_width: 640,
+            default_height: 480,
 
             #[name = "notebook"]
             gtk::Notebook {},
@@ -121,7 +121,7 @@ impl App {
 
         notebook.show_all();
 
-        if notebook.get_n_pages() == 1 {
+        if notebook.n_pages() == 1 {
             notebook.set_show_tabs(false);
         } else {
             notebook.set_show_tabs(true);
@@ -146,7 +146,7 @@ impl App {
         self.model.tabs.remove(&widget);
         self.model.terminals.remove(&widget);
 
-        match self.widgets.notebook.get_n_pages() {
+        match self.widgets.notebook.n_pages() {
             0 => self.model.relm.stream().emit(AppMsg::Quit),
             1 => self.widgets.notebook.set_show_tabs(false),
             _ => {}
@@ -155,7 +155,7 @@ impl App {
 
     #[instrument(skip(self, event))]
     fn print_key(&self, event: gdk::EventKey) {
-        if let Some(name) = event.get_keyval().name() {
+        if let Some(name) = event.keyval().name() {
             debug!("key pressed: {}", name);
         }
     }
