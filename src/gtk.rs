@@ -1,3 +1,3 @@
 pub mod app;
-pub mod tab;
+pub mod tabs;
 pub mod terminal;

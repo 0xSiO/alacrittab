@@ -1,7 +1,7 @@
 use std::ptr;
 
 use alacritty_terminal::{config::Config, tty};
-use relm::*;
+use relm4::RelmApp;
 use shared_library::dynamic_library::DynamicLibrary;
 use tracing::*;
 use tracing_subscriber::EnvFilter;
@@ -9,9 +9,9 @@ use tracing_subscriber::EnvFilter;
 mod common;
 mod gtk;
 
-use crate::gtk::app::AppParams;
+use crate::gtk::app::AppModel;
 
-// TODO: Note required packages: libepoxy-devel, gtk3-devel
+// TODO: Note required packages: libepoxy-devel, gtk4-devel, libadwaita
 #[instrument]
 fn main() {
     tracing_subscriber::fmt()
@@ -33,7 +33,7 @@ fn main() {
     });
     gl::load_with(epoxy::get_proc_addr);
 
-    gtk::app::App::run(AppParams { config }).unwrap();
+    RelmApp::new(AppModel::default()).run();
 
     info!("quitting alacrittab");
 }
